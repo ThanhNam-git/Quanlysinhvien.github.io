@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ERD Tài khoản & RBAC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: tài liệu review một cột — sơ đồ tổng thể, cách tính quyền, thẻ bảng theo feature, ràng buộc, ma trận vị trí – permission, điểm cần chốt */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1b2230;
+  --muted: #5d6779;
+  --line: #dde1e8;
+  --accent: #1f5fae;
+  --account: #1f5fae;
+  --account-soft: #e6eef9;
+  --org: #157a63;
+  --org-soft: #e2f3ee;
+  --shared: #9a6212;
+  --shared-soft: #f8eedd;
+  --warn: #a34b12;
+  --warn-soft: #fbeee3;
+  --paper: #ffffff;
+  --font-body: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12161d; --surface: #1a2029; --fg: #e4e8ef; --muted: #9aa4b5; --line: #2c3442;
+    --accent: #7fb0ec; --account: #7fb0ec; --account-soft: #1c2b40;
+    --org: #6fd0b4; --org-soft: #16302a; --shared: #e3b46a; --shared-soft: #33291a;
+    --warn: #f0a46c; --warn-soft: #3a2518; --paper: #f3f5f8;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12161d; --surface: #1a2029; --fg: #e4e8ef; --muted: #9aa4b5; --line: #2c3442;
+  --accent: #7fb0ec; --account: #7fb0ec; --account-soft: #1c2b40;
+  --org: #6fd0b4; --org-soft: #16302a; --shared: #e3b46a; --shared-soft: #33291a;
+  --warn: #f0a46c; --warn-soft: #3a2518; --paper: #f3f5f8;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 32px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 44px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 20px; font-weight: 600; }
+p { margin: 0; max-width: 72ch; }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
+.eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+header { display: grid; gap: 12px; }
+.lede { color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+section { display: grid; gap: 16px; }
+.section-head { display: grid; gap: 4px; }
+
+.diagram { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow-x: auto; }
+.diagram pre { margin: 0; min-width: 900px; display: flex; justify-content: center; }
+
+.layers { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.layer { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 8px; align-content: start; }
+.layer h3 { font-size: 15px; }
+.layer p { color: var(--muted); font-size: 14px; }
+
+.formula { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; font-family: var(--font-mono); font-size: 13.5px; overflow-x: auto; white-space: pre; line-height: 1.7; }
+
+.feature { display: grid; gap: 14px; }
+.feature-title { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.feature-title h2 { font-family: var(--font-mono); font-size: 17px; }
+.tables { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 16px; align-items: start; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; min-width: 0; }
+.card-head { padding: 12px 14px 10px; border-bottom: 1px solid var(--line); display: grid; gap: 4px; }
+.card-head .name { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.card-head h3 { font-family: var(--font-mono); font-size: 15px; font-weight: 500; }
+.card-head p { font-size: 13px; color: var(--muted); }
+.f-account .card-head { background: var(--account-soft); }
+.f-org .card-head { background: var(--org-soft); }
+.f-shared .card-head { background: var(--shared-soft); }
+.cols { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cols td { padding: 6px 14px; border-top: 1px solid var(--line); vertical-align: top; }
+.cols tr:first-child td { border-top: 0; }
+.cols .c-name { font-family: var(--font-mono); font-size: 12.5px; word-break: break-word; }
+.cols .c-type { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+.cols .c-note { color: var(--muted); font-size: 12px; }
+.badges { display: inline-flex; gap: 4px; margin-left: 6px; vertical-align: 1px; }
+.b { font-family: var(--font-mono); font-size: 10px; font-weight: 500; padding: 1px 5px; border-radius: 4px; border: 1px solid currentColor; line-height: 1.4; }
+.b-PK { color: var(--accent); }
+.b-FK { color: var(--org); }
+.b-UK { color: var(--shared); }
+.b-CK { color: var(--muted); }
+.tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); }
+
+.rules { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
+.rules li { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; display: grid; gap: 4px; }
+.rules li strong { font-weight: 600; }
+.rules li code { color: var(--muted); }
+
+.matrix-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.matrix { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 640px; }
+.matrix th, .matrix td { padding: 8px 14px; border-top: 1px solid var(--line); text-align: left; }
+.matrix thead th { border-top: 0; font-size: 12px; letter-spacing: 0.04em; color: var(--muted); font-weight: 600; vertical-align: bottom; }
+.matrix thead th small { display: block; font-weight: 400; font-family: var(--font-mono); font-size: 11px; }
+.matrix .chk { text-align: center; width: 120px; }
+.matrix td.chk { color: var(--accent); font-weight: 700; }
+.matrix td.all { color: var(--muted); font-weight: 400; font-size: 12px; }
+.matrix tbody tr.group td { background: var(--bg); font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; padding-block: 6px; }
+
+.open { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
+.open li { background: var(--warn-soft); border-radius: 10px; padding: 12px 16px; display: grid; gap: 4px; }
+.open li strong { color: var(--warn); }
+.open li p { font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Đồ án · Hệ thống quản lý công việc · Module 1 & 2</div>
+    <h1>ERD Tài khoản, phân quyền và Tổ chức</h1>
+    <p class="lede">Thiết kế CSDL PostgreSQL. Permission được cấu hình cho từng vị trí việc làm; <code>users.type</code> chỉ phân biệt Admin hệ thống với người dùng thường. Nguồn: <code>backend/instruction/database.md</code>. Bản để review, chưa tạo migration.</p>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--account)"></i>account</span>
+      <span><i class="dot" style="background:var(--org)"></i>organization</span>
+      <span><i class="dot" style="background:var(--shared)"></i>shared</span>
+      <span><span class="b b-PK">PK</span> khóa chính</span>
+      <span><span class="b b-FK">FK</span> khóa ngoại</span>
+      <span><span class="b b-UK">UK</span> duy nhất</span>
+      <span><span class="b b-CK">CK</span> CHECK</span>
+    </div>
+  </header>
+
+  <section>
+    <div class="section-head">
+      <h2>Sơ đồ quan hệ</h2>
+      <p class="lede">Cột audit <code>created_by</code>/<code>updated_by</code> đều trỏ về <code>users</code>; không vẽ để sơ đồ đỡ rối.</p>
+    </div>
+    <div class="diagram">
+<pre class="mermaid">
+%%{init: {'theme': 'neutral'}}%%
+erDiagram
+    users ||--o{ department_members : "giữ chức vụ"
+    departments ||--o{ department_members : "có thành viên"
+    job_positions |o--o{ department_members : "vị trí việc làm"
+    job_positions ||--o{ job_position_permissions : "được cấp"
+    permissions ||--o{ job_position_permissions : "cấp cho"
+    users |o--o{ audit_logs : "thực hiện"
+
+    users {
+        bigint id PK
+        varchar username UK
+        varchar email UK
+        varchar password_hash
+        varchar full_name
+        varchar phone
+        varchar type "ADMIN MEMBER"
+        varchar status "ACTIVE LOCKED DISABLED"
+        int failed_login_attempts
+        timestamptz locked_until
+        timestamptz password_changed_at
+        timestamptz last_login_at
+    }
+    permissions {
+        bigint id PK
+        varchar code UK "user:create ..."
+        varchar name
+        varchar module
+        varchar description
+    }
+    job_position_permissions {
+        bigint job_position_id PK, FK
+        bigint permission_id PK, FK
+        timestamptz granted_at
+        bigint granted_by FK
+    }
+    departments {
+        bigint id PK
+        varchar code UK
+        varchar name
+        varchar status "ACTIVE INACTIVE"
+    }
+    job_positions {
+        bigint id PK
+        varchar code UK
+        varchar name
+        varchar description
+        boolean active
+    }
+    department_members {
+        bigint id PK
+        bigint department_id FK
+        bigint user_id FK
+        varchar position "HEAD DEPUTY STAFF"
+        bigint job_position_id FK
+        timestamptz started_at
+        timestamptz ended_at "null = đang hiệu lực"
+        varchar end_reason
+        bigint assigned_by FK
+    }
+    audit_logs {
+        bigint id PK
+        bigint actor_id FK
+        varchar action
+        varchar target_type
+        bigint target_id
+        jsonb old_value
+        jsonb new_value
+        timestamptz created_at
+    }
+</pre>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Một người được quyền gì</h2>
+      <p class="lede">Tính một lần lúc đăng nhập (session của Spring Security).</p>
+    </div>
+<div class="formula">users.type = ADMIN   →  mọi permission trong bảng permissions + ROLE_ADMIN
+users.type = MEMBER  →  permission của job_position thuộc chức vụ đang hiệu lực
+                        (department_members.ended_at IS NULL)
+                        không có chức vụ hoặc vị trí → không có permission quản trị</div>
+    <div class="layers">
+      <div class="layer">
+        <div class="eyebrow">Lớp 1 · quản trị</div>
+        <h3>Permission theo vị trí việc làm</h3>
+        <p>Tạo, khóa tài khoản; CRUD phòng ban; gán chức vụ; xem toàn bộ; khóa kỳ KPI; tạo ủy quyền thay.</p>
+        <p>Kiểm tra bằng <code>@PreAuthorize("hasAuthority('member:assign')")</code> ở controller.</p>
+      </div>
+      <div class="layer">
+        <div class="eyebrow">Lớp 2 · nghiệp vụ</div>
+        <h3>Quyền theo chức vụ TP/PP/NV</h3>
+        <p>Ai giao việc cho ai, ai review, ai chấp nhận Trình TP. Tính từ <code>department_members.position</code> và phiếu ủy quyền, không từ permission.</p>
+        <p>Kiểm tra trong application service và domain, qua <code>GetCurrentMembershipUseCase</code>.</p>
+      </div>
+      <div class="layer">
+        <div class="eyebrow">Chỉ ADMIN</div>
+        <h3>Cấu hình phân quyền</h3>
+        <p>Cấp, thu hồi permission cho vị trí việc làm và đổi <code>users.type</code>. Kiểm tra bằng <code>hasRole('ADMIN')</code>, không phải permission, để không ai tự cấp thêm quyền cho mình.</p>
+      </div>
+    </div>
+  </section>
+
+  <div id="features" style="display:grid;gap:44px"></div>
+
+  <section>
+    <div class="section-head">
+      <h2>Ràng buộc nghiệp vụ trong CSDL</h2>
+    </div>
+    <ul class="rules">
+      <li><strong>Mỗi người chỉ một chức vụ đang hiệu lực</strong><code>UNIQUE (user_id) WHERE ended_at IS NULL</code></li>
+      <li><strong>Mỗi phòng chỉ một TP đang hiệu lực</strong><code>UNIQUE (department_id) WHERE position = 'HEAD' AND ended_at IS NULL</code></li>
+      <li><strong>Một permission chỉ cấp một lần cho mỗi vị trí</strong><code>PRIMARY KEY (job_position_id, permission_id)</code></li>
+      <li><strong>Đổi chức vụ hoặc chuyển phòng giữ lịch sử</strong><span>Đóng dòng cũ (<code>ended_at</code>, <code>end_reason</code>) và thêm dòng mới trong cùng transaction. Dùng cho BR-11 và KPI theo kỳ. Permission theo vị trí cũ mất từ lần đăng nhập sau.</span></li>
+      <li><strong>Username và email duy nhất, không phân biệt hoa thường</strong><code>UNIQUE INDEX ON users (lower(username)), (lower(email))</code></li>
+      <li><strong>Không xóa cứng người dùng và phòng ban</strong><span>Nghỉ việc → <code>DISABLED</code>, phòng ngừng → <code>INACTIVE</code>. Task và KPI cũ vẫn tham chiếu được.</span></li>
+      <li><strong>Danh mục permission do migration quản lý</strong><span>Bảng <code>permissions</code> chỉ seed bằng Flyway, không có API thêm hoặc xóa, vì mỗi mã gắn với một <code>@PreAuthorize</code> trong code.</span></li>
+      <li><strong>Nhật ký chỉ thêm</strong><span><code>audit_logs</code> không có API sửa hoặc xóa. Cấp, thu hồi permission cũng được ghi.</span></li>
+      <li><strong>Khóa ngoại xuyên feature có ở DB, không có ở JPA</strong><span>Ví dụ <code>department_members.user_id</code> là FK thật, nhưng entity chỉ lưu <code>Long userId</code>.</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Danh mục permission và cấu hình mẫu</h2>
+      <p class="lede">14 permission áp dụng cho mọi người dùng. Cột vị trí việc làm là dữ liệu seed mẫu; ADMIN đổi được trên giao diện. Thao tác cá nhân (hồ sơ, đổi mật khẩu, làm task) chỉ cần đăng nhập.</p>
+    </div>
+    <div class="matrix-wrap">
+      <table class="matrix" id="matrix">
+        <thead><tr>
+          <th>Permission</th><th>Ý nghĩa</th>
+          <th class="chk">ADMIN<small>users.type</small></th>
+          <th class="chk">Chuyên viên tổ chức – nhân sự<small>HR_OFFICER</small></th>
+          <th class="chk">Chuyên viên<small>SPECIALIST</small></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Cần chốt khi review</h2>
+    </div>
+    <ul class="open">
+      <li><strong>Role HR trở thành vị trí việc làm</strong><p>Không còn role HR. Người làm nhân sự cần có chức vụ trong một phòng (ví dụ Phòng Tổ chức) với vị trí <code>HR_OFFICER</code>. CLAUDE.md gốc đang ghi "role Admin/HR/Member" nên cần sửa theo.</p></li>
+      <li><strong>ADMIN có mọi permission, kể cả khóa kỳ KPI</strong><p>Trước đây chỉ HR khóa kỳ. Nếu muốn giữ, cần loại <code>kpi:lock-period</code> khỏi quyền của ADMIN.</p></li>
+      <li><strong>Ngưỡng khóa đăng nhập</strong><p>Đang đặt sai mật khẩu 5 lần thì khóa tạm 15 phút.</p></li>
+      <li><strong>Không có optimistic lock</strong><p>Đã bỏ cột <code>version</code>: hai người sửa cùng một bản ghi cùng lúc thì người lưu sau ghi đè người trước.</p></li>
+    </ul>
+  </section>
+</div>
+
+<script>
+const features = [
+  { cls: "f-account", title: "account", desc: "Tài khoản & phân quyền (module 1)", tables: [
+    { name: "users", desc: "Tài khoản đăng nhập. Nghỉ việc chuyển DISABLED, không xóa.", cols: [
+      ["id", "BIGINT", ["PK"], "identity"],
+      ["username", "VARCHAR(50)", ["UK"], "duy nhất theo lower()"],
+      ["email", "VARCHAR(255)", ["UK"], "duy nhất theo lower(), nhận thông báo"],
+      ["password_hash", "VARCHAR(100)", [], "BCrypt, tiền tố {bcrypt}"],
+      ["full_name", "VARCHAR(150)", [], ""],
+      ["phone", "VARCHAR(20)", [], "tùy chọn"],
+      ["type", "VARCHAR(20)", ["CK"], "ADMIN · MEMBER, mặc định MEMBER"],
+      ["status", "VARCHAR(20)", ["CK"], "ACTIVE · LOCKED · DISABLED"],
+      ["failed_login_attempts", "INT", [], "sai 5 lần → khóa tạm"],
+      ["locked_until", "TIMESTAMPTZ", [], "khóa tạm 15 phút"],
+      ["password_changed_at", "TIMESTAMPTZ", [], ""],
+      ["last_login_at", "TIMESTAMPTZ", [], ""],
+      ["created_by, updated_by", "BIGINT", ["FK"], "→ users"],
+      ["created_at, updated_at", "TIMESTAMPTZ", [], ""]
+    ]},
+    { name: "permissions", desc: "Danh mục permission dùng chung cho mọi người dùng. Seed bằng migration.", cols: [
+      ["id", "BIGINT", ["PK"], ""],
+      ["code", "VARCHAR(60)", ["UK"], "user:create, kpi:lock-period…"],
+      ["name", "VARCHAR(150)", [], "tên hiển thị tiếng Việt"],
+      ["module", "VARCHAR(30)", [], "account, organization, kpi…"],
+      ["description", "VARCHAR(255)", [], ""]
+    ]}
+  ]},
+  { cls: "f-org", title: "organization", desc: "Tổ chức (module 2)", tables: [
+    { name: "job_positions", desc: "Vị trí việc làm (chuyên viên, chuyên viên tổ chức – nhân sự…), khác chức vụ TP/PP/NV.", cols: [
+      ["id", "BIGINT", ["PK"], ""],
+      ["code", "VARCHAR(30)", ["UK"], "SPECIALIST, HR_OFFICER…"],
+      ["name", "VARCHAR(150)", [], ""],
+      ["description", "VARCHAR(500)", [], ""],
+      ["active", "BOOLEAN", [], ""],
+      ["created_by, updated_by", "BIGINT", ["FK"], "→ users"],
+      ["created_at, updated_at", "TIMESTAMPTZ", [], ""]
+    ]},
+    { name: "job_position_permissions", desc: "Cấu hình permission cho từng vị trí việc làm. Chỉ ADMIN sửa.", cols: [
+      ["job_position_id", "BIGINT", ["PK", "FK"], "→ job_positions, cascade"],
+      ["permission_id", "BIGINT", ["PK", "FK"], "→ permissions, cascade"],
+      ["granted_at", "TIMESTAMPTZ", [], ""],
+      ["granted_by", "BIGINT", ["FK"], "→ users (ADMIN)"]
+    ]},
+    { name: "departments", desc: "Phòng ban. Ngừng hoạt động chuyển INACTIVE.", cols: [
+      ["id", "BIGINT", ["PK"], ""],
+      ["code", "VARCHAR(30)", ["UK"], ""],
+      ["name", "VARCHAR(150)", [], ""],
+      ["description", "VARCHAR(500)", [], ""],
+      ["status", "VARCHAR(20)", ["CK"], "ACTIVE · INACTIVE"],
+      ["created_by, updated_by", "BIGINT", ["FK"], "→ users"],
+      ["created_at, updated_at", "TIMESTAMPTZ", [], ""]
+    ]},
+    { name: "department_members", desc: "Mỗi dòng là một giai đoạn giữ chức vụ trong một phòng. Nối người dùng với vị trí việc làm.", cols: [
+      ["id", "BIGINT", ["PK"], ""],
+      ["department_id", "BIGINT", ["FK"], "→ departments"],
+      ["user_id", "BIGINT", ["FK"], "→ users"],
+      ["position", "VARCHAR(20)", ["CK"], "HEAD (TP) · DEPUTY (PP) · STAFF (NV)"],
+      ["job_position_id", "BIGINT", ["FK"], "→ job_positions, quyết định permission"],
+      ["started_at", "TIMESTAMPTZ", [], ""],
+      ["ended_at", "TIMESTAMPTZ", ["CK"], "null = đang hiệu lực; > started_at"],
+      ["end_reason", "VARCHAR(255)", [], "chuyển phòng, nghỉ việc…"],
+      ["assigned_by", "BIGINT", ["FK"], "→ users"],
+      ["created_at", "TIMESTAMPTZ", [], ""]
+    ]}
+  ]},
+  { cls: "f-shared", title: "shared", desc: "Dùng chung", tables: [
+    { name: "audit_logs", desc: "Nhật ký thao tác quản trị. Chỉ thêm, không sửa, không xóa. Lịch sử task dùng bảng riêng.", cols: [
+      ["id", "BIGINT", ["PK"], ""],
+      ["actor_id", "BIGINT", ["FK"], "→ users, null nếu hệ thống"],
+      ["action", "VARCHAR(50)", [], "USER_CREATED, PERMISSION_GRANTED…"],
+      ["target_type, target_id", "VARCHAR · BIGINT", [], "đối tượng bị tác động"],
+      ["old_value, new_value", "JSONB", [], ""],
+      ["reason", "VARCHAR(500)", [], ""],
+      ["ip_address", "VARCHAR(45)", [], ""],
+      ["created_at", "TIMESTAMPTZ", [], ""]
+    ]}
+  ]}
+];
+
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+document.getElementById("features").innerHTML = features.map(f => `
+  <section class="feature ${f.cls}">
+    <div class="feature-title"><h2>${f.title}</h2><span class="lede">${esc(f.desc)}</span></div>
+    <div class="tables">
+      ${f.tables.map(t => `
+        <article class="card">
+          <div class="card-head">
+            <div class="name"><h3>${t.name}</h3></div>
+            <p>${esc(t.desc)}</p>
+          </div>
+          <table class="cols"><tbody>
+            ${t.cols.map(([n, ty, keys, note]) => `
+              <tr>
+                <td class="c-name">${esc(n)}${keys.length ? `<span class="badges">${keys.map(k => `<span class="b b-${k}">${k}</span>`).join("")}</span>` : ""}</td>
+                <td class="c-type">${esc(ty)}</td>
+                <td class="c-note">${esc(note)}</td>
+              </tr>`).join("")}
+          </tbody></table>
+        </article>`).join("")}
+    </div>
+  </section>`).join("");
+
+// [code, ý nghĩa, HR_OFFICER, SPECIALIST]
+const perms = [
+  ["account", [
+    ["user:read", "Xem tài khoản", 1, 0],
+    ["user:create", "Tạo tài khoản", 1, 0],
+    ["user:update", "Sửa tài khoản", 1, 0],
+    ["user:lock", "Khóa, mở khóa, vô hiệu hóa", 1, 0],
+    ["user:reset-password", "Đặt lại mật khẩu người khác", 1, 0]
+  ]],
+  ["organization", [
+    ["department:read", "Xem tất cả phòng ban", 1, 0],
+    ["department:manage", "Tạo, sửa, ngừng phòng ban", 0, 0],
+    ["member:assign", "Gán, đổi, kết thúc chức vụ TP/PP/NV", 1, 0],
+    ["job-position:manage", "Sửa tên, mô tả vị trí việc làm", 1, 0]
+  ]],
+  ["delegation · task · kpi · shared", [
+    ["delegation:create-on-behalf", "Tạo ủy quyền thay khi TP vắng đột xuất", 1, 0],
+    ["task:read-all", "Xem toàn bộ task, không duyệt", 1, 0],
+    ["kpi:read-all", "Xem KPI mọi phòng", 1, 0],
+    ["kpi:lock-period", "Khóa kỳ KPI", 1, 0],
+    ["audit:read", "Xem nhật ký hệ thống", 0, 0]
+  ]]
+];
+document.querySelector("#matrix tbody").innerHTML = perms.map(([g, rows]) =>
+  `<tr class="group"><td colspan="5">${g}</td></tr>` +
+  rows.map(([code, name, hr, sp]) => `<tr><td class="mono">${code}</td><td>${esc(name)}</td><td class="chk all">tất cả</td>${[hr, sp].map(v => `<td class="chk">${v ? "✓" : ""}</td>`).join("")}</tr>`).join("")
+).join("");
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true });</script>
+</body>
+</html>
