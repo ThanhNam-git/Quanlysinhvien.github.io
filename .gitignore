@@ -9,3 +9,8 @@ Thumbs.db
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Biến môi trường, thông tin nhạy cảm
+.env
+.env.*
+!.env.example

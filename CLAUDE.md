@@ -151,6 +151,17 @@ Xếp loại: ≥ 90 Hoàn thành xuất sắc; 70–<90 Hoàn thành tốt; 50�
 
 Chốt điểm hằng tháng: ngày 1 tháng sau hệ thống tính điểm nháp → NV xem, tự đánh giá, ghi ý kiến → TP xử lý ý kiến, chấm 30 điểm, chốt phòng → HR khóa kỳ (sau khóa không đổi điểm). Điểm năm = trung bình 12 tháng.
 
+Quy tắc chi tiết (tài liệu nghiệp vụ mục 10.5–10.10):
+- **Task được tính:** task được giao (kể cả task cha, Trình TP), có hạn, không bị hủy. Task tự giao **không** tính. Tính cho người thực hiện cuối cùng.
+- **Kỳ của task** = tháng chứa hạn hiện hành (sau gia hạn), giờ VN. Một task chỉ thuộc một kỳ.
+- b, c chỉ tính trên task đã duyệt. c so **ngày nộp phiên bản được duyệt** với hạn. Trình TP: b = 100%, c so ngày TP bấm Hoàn thành.
+- Có task nhưng không task nào duyệt → điểm nhiệm vụ 0. Không có task → TP nhập tay điểm nhiệm vụ, bắt buộc lý do.
+- d tính sau khi mọi NV có xếp loại. TP chấm 30 điểm chung cho NV, PP và chấm đ, e cho PP; HR nhập thay cấp trên cho TP. PP được ủy quyền không chấm thay. Không ai chấm hoặc xử lý ý kiến KPI của chính mình.
+- Ý kiến: xin xác nhận trễ có lý do / khiếu nại số liệu (gắn task) / ý kiến chung. Chấp nhận trễ có lý do → c của task = 100%.
+- Kỳ theo phòng–tháng: **Đang đánh giá** (tự tính lại) → TP chốt → **Đã chốt** → HR khóa → **Đã khóa** (HR có thể trả lại TP khi đã chốt). Chốt khi mọi người đã có điểm chấm tay và mọi ý kiến đã xử lý.
+- Vượt 20% Xuất sắc chỉ cảnh báo. Xếp loại phòng do HR nhập; TP cao hơn phòng thì hạ xuống bằng. HR đánh dấu kỷ luật → Không hoàn thành.
+- Mã quy tắc KR-01…KR-11 (tài liệu nghiệp vụ mục 10.10).
+
 > Công thức lấy từ bài phân tích báo chí, chưa đối chiếu văn bản gốc NĐ 335/2025.
 
 ## Module chức năng
@@ -175,3 +186,4 @@ Thứ tự làm: 1 → 2 → 3 → 4 → 5 → 6 → 7 (KPI cần dữ liệu gi
 - PP được ủy quyền có chấm KPI thay TP không? (Hiện tại: không.)
 - Thời gian nhắc 48h/72h có cho HR cấu hình không?
 - Có giao việc liên phòng trong bản đầu không?
+- KPI: kỳ của task theo tháng của hạn hay tháng hoàn thành? Nộp lại sau hạn do làm lại có tính trễ? Task tự giao có tính? Có trọng số theo độ ưu tiên? Ai chấm cho TP? (Hiện tại: tháng của hạn / có / không / không / HR nhập thay.)

@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ERD Giao việc, ủy quyền & KPI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: tài liệu review một cột — sơ đồ tổng thể, sơ đồ trạng thái, công thức KPI, thẻ bảng theo feature, ràng buộc, điểm cần chốt */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1b2230;
+  --muted: #5d6779;
+  --line: #dde1e8;
+  --accent: #1f5fae;
+  --account: #1f5fae;
+  --account-soft: #e6eef9;
+  --org: #157a63;
+  --org-soft: #e2f3ee;
+  --shared: #9a6212;
+  --shared-soft: #f8eedd;
+  --warn: #a34b12;
+  --warn-soft: #fbeee3;
+  --paper: #ffffff;
+  --font-body: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12161d; --surface: #1a2029; --fg: #e4e8ef; --muted: #9aa4b5; --line: #2c3442;
+    --accent: #7fb0ec; --account: #7fb0ec; --account-soft: #1c2b40;
+    --org: #6fd0b4; --org-soft: #16302a; --shared: #e3b46a; --shared-soft: #33291a;
+    --warn: #f0a46c; --warn-soft: #3a2518; --paper: #f3f5f8;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12161d; --surface: #1a2029; --fg: #e4e8ef; --muted: #9aa4b5; --line: #2c3442;
+  --accent: #7fb0ec; --account: #7fb0ec; --account-soft: #1c2b40;
+  --org: #6fd0b4; --org-soft: #16302a; --shared: #e3b46a; --shared-soft: #33291a;
+  --warn: #f0a46c; --warn-soft: #3a2518; --paper: #f3f5f8;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 32px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 44px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 20px; font-weight: 600; }
+p { margin: 0; max-width: 72ch; }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
+.eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+header { display: grid; gap: 12px; }
+.lede { color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+section { display: grid; gap: 16px; }
+.section-head { display: grid; gap: 4px; }
+
+.diagram { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow-x: auto; }
+.diagram pre { margin: 0; min-width: 900px; display: flex; justify-content: center; }
+
+.layers { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.layer { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 8px; align-content: start; }
+.layer h3 { font-size: 15px; }
+.layer p { color: var(--muted); font-size: 14px; }
+
+.formula { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; font-family: var(--font-mono); font-size: 13.5px; overflow-x: auto; white-space: pre; line-height: 1.7; }
+
+.feature { display: grid; gap: 14px; }
+.feature-title { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.feature-title h2 { font-family: var(--font-mono); font-size: 17px; }
+.tables { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 16px; align-items: start; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; min-width: 0; }
+.card-head { padding: 12px 14px 10px; border-bottom: 1px solid var(--line); display: grid; gap: 4px; }
+.card-head .name { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.card-head h3 { font-family: var(--font-mono); font-size: 15px; font-weight: 500; }
+.card-head p { font-size: 13px; color: var(--muted); }
+.f-account .card-head { background: var(--account-soft); }
+.f-org .card-head { background: var(--org-soft); }
+.f-shared .card-head { background: var(--shared-soft); }
+.cols { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cols td { padding: 6px 14px; border-top: 1px solid var(--line); vertical-align: top; }
+.cols tr:first-child td { border-top: 0; }
+.cols .c-name { font-family: var(--font-mono); font-size: 12.5px; word-break: break-word; }
+.cols .c-type { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+.cols .c-note { color: var(--muted); font-size: 12px; }
+.badges { display: inline-flex; gap: 4px; margin-left: 6px; vertical-align: 1px; }
+.b { font-family: var(--font-mono); font-size: 10px; font-weight: 500; padding: 1px 5px; border-radius: 4px; border: 1px solid currentColor; line-height: 1.4; }
+.b-PK { color: var(--accent); }
+.b-FK { color: var(--org); }
+.b-UK { color: var(--shared); }
+.b-CK { color: var(--muted); }
+.tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); }
+
+.rules { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
+.rules li { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; display: grid; gap: 4px; }
+.rules li strong { font-weight: 600; }
+.rules li code { color: var(--muted); }
+
+.matrix-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.matrix { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 640px; }
+.matrix th, .matrix td { padding: 8px 14px; border-top: 1px solid var(--line); text-align: left; }
+.matrix thead th { border-top: 0; font-size: 12px; letter-spacing: 0.04em; color: var(--muted); font-weight: 600; vertical-align: bottom; }
+.matrix thead th small { display: block; font-weight: 400; font-family: var(--font-mono); font-size: 11px; }
+.matrix .chk { text-align: center; width: 120px; }
+.matrix td.chk { color: var(--accent); font-weight: 700; }
+.matrix td.all { color: var(--muted); font-weight: 400; font-size: 12px; }
+.matrix tbody tr.group td { background: var(--bg); font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; padding-block: 6px; }
+
+.open { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
+.open li { background: var(--warn-soft); border-radius: 10px; padding: 12px 16px; display: grid; gap: 4px; }
+.open li strong { color: var(--warn); }
+.open li p { font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Đồ án · Hệ thống quản lý công việc · Module 3, 4 & 6</div>
+    <h1>ERD Giao việc, ủy quyền và KPI</h1>
+    <p class="lede">Thiết kế CSDL PostgreSQL cho giao việc, thực hiện & review, ủy quyền và đánh giá KPI. Nguồn: <code>backend/instruction/database.md</code> mục 8–9; nghiệp vụ KPI: mục 10.5–10.10 của tài liệu nghiệp vụ. Bản để review, chưa tạo migration.</p>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--account)"></i>task</span>
+      <span><i class="dot" style="background:var(--org)"></i>delegation</span>
+      <span><i class="dot" style="background:var(--shared)"></i>kpi</span>
+      <span><span class="b b-PK">PK</span> khóa chính</span>
+      <span><span class="b b-FK">FK</span> khóa ngoại</span>
+      <span><span class="b b-UK">UK</span> duy nhất</span>
+      <span><span class="b b-CK">CK</span> CHECK</span>
+    </div>
+  </header>
+
+  <section>
+    <div class="section-head">
+      <h2>Sơ đồ quan hệ</h2>
+      <p class="lede"><code>users</code> và <code>departments</code> là bảng của module 1–2 (xem <code>erd-rbac.html</code>). Cột audit và phần lớn FK tới <code>users</code> không vẽ để sơ đồ đỡ rối.</p>
+    </div>
+    <div class="diagram">
+<pre class="mermaid">
+%%{init: {'theme': 'neutral'}}%%
+erDiagram
+    departments ||--o{ tasks : "thuộc phòng"
+    users ||--o{ tasks : "giao / thực hiện / review"
+    tasks |o--o{ tasks : "cha – con"
+    tasks ||--o{ task_submissions : "phiên bản kết quả"
+    tasks ||--o{ task_attachments : "đính kèm"
+    task_submissions |o--o{ task_attachments : "file của phiên bản"
+    tasks ||--o{ task_comments : "bình luận"
+    tasks ||--o{ task_extension_requests : "xin gia hạn"
+    tasks ||--o{ task_histories : "lịch sử"
+    departments ||--o{ delegations : "ủy quyền"
+    delegations |o--o{ tasks : "giao thay mặt TP"
+    delegations |o--o{ task_histories : "thao tác thay mặt TP"
+    departments ||--o{ kpi_periods : "kỳ theo tháng"
+    kpi_periods ||--o{ kpi_evaluations : "mỗi người một phiếu"
+    users ||--o{ kpi_evaluations : "được đánh giá"
+    kpi_evaluations ||--o{ kpi_task_items : "task đã tính"
+    tasks ||--o| kpi_task_items : "tính vào một kỳ"
+    kpi_evaluations ||--o{ kpi_feedbacks : "ý kiến"
+    kpi_task_items |o--o{ kpi_feedbacks : "ý kiến về task"
+
+    users {
+        bigint id PK
+    }
+    departments {
+        bigint id PK
+    }
+    tasks {
+        bigint id PK
+        bigint department_id FK
+        bigint parent_id FK
+        varchar type "ASSIGNED SELF HEAD_REQUEST"
+        varchar status
+        bigint assigner_id FK
+        bigint assignee_id FK
+        bigint reviewer_id FK
+        bigint delegation_id FK
+        timestamptz due_at
+        boolean overdue
+        timestamptz completed_at
+    }
+    task_submissions {
+        bigint id PK
+        bigint task_id FK
+        smallint version
+        varchar result "PENDING APPROVED REWORK"
+    }
+    task_attachments {
+        bigint id PK
+        bigint task_id FK
+        bigint submission_id FK
+    }
+    task_comments {
+        bigint id PK
+        bigint task_id FK
+    }
+    task_extension_requests {
+        bigint id PK
+        bigint task_id FK
+        varchar status
+    }
+    task_histories {
+        bigint id PK
+        bigint task_id FK
+        bigint delegation_id FK
+        varchar action
+    }
+    delegations {
+        bigint id PK
+        varchar code UK
+        bigint delegator_id FK "TP"
+        bigint delegate_id FK "PP"
+        timestamptz starts_at
+        timestamptz ends_at
+    }
+    kpi_periods {
+        bigint id PK
+        bigint department_id FK
+        smallint year
+        smallint month
+        varchar status "OPEN FINALIZED LOCKED"
+    }
+    kpi_evaluations {
+        bigint id PK
+        bigint period_id FK
+        bigint user_id FK
+        numeric task_score "0–70"
+        numeric general_score "0–30"
+        varchar grade
+    }
+    kpi_task_items {
+        bigint id PK
+        bigint evaluation_id FK
+        bigint task_id FK
+    }
+    kpi_feedbacks {
+        bigint id PK
+        bigint evaluation_id FK
+        bigint task_item_id FK
+        varchar type
+    }
+</pre>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Trạng thái task và kỳ KPI</h2>
+      <p class="lede">Chuyển trạng thái kiểm tra trong domain; DB chỉ kiểm tra giá trị hợp lệ. <code>CANCELLED</code> là trạng thái kỹ thuật cho thao tác hủy (BR-10).</p>
+    </div>
+    <div class="layers">
+      <div class="diagram">
+<pre class="mermaid" style="min-width:0">
+%%{init: {'theme': 'neutral'}}%%
+stateDiagram-v2
+    [*] --> PENDING_ACCEPTANCE : Trình TP
+    [*] --> ASSIGNED : giao trực tiếp
+    PENDING_ACCEPTANCE --> ASSIGNED : TP chấp nhận
+    PENDING_ACCEPTANCE --> REJECTED : TP từ chối
+    REJECTED --> PENDING_ACCEPTANCE : PP sửa, gửi lại
+    ASSIGNED --> IN_PROGRESS : bắt đầu
+    IN_PROGRESS --> IN_REVIEW : nộp kết quả
+    IN_PROGRESS --> COMPLETED : Trình TP / TP tự giao
+    IN_REVIEW --> COMPLETED : Duyệt
+    IN_REVIEW --> REWORK : Yêu cầu làm lại
+    REWORK --> IN_REVIEW : nộp lại
+    COMPLETED --> [*]
+</pre>
+      </div>
+      <div class="diagram">
+<pre class="mermaid" style="min-width:0">
+%%{init: {'theme': 'neutral'}}%%
+stateDiagram-v2
+    [*] --> OPEN : ngày 1 tháng sau, tính nháp
+    OPEN --> OPEN : tính lại (đêm, khi duyệt task, chấp nhận ý kiến)
+    OPEN --> FINALIZED : TP chốt phòng
+    FINALIZED --> OPEN : HR trả lại (có lý do)
+    FINALIZED --> LOCKED : HR khóa kỳ
+    LOCKED --> [*]
+</pre>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Điểm KPI tính từ đâu</h2>
+    </div>
+<div class="formula">Task thuộc kỳ   = type ≠ SELF, status ≠ CANCELLED, due_at trong tháng (giờ VN), chưa thuộc kỳ đã chốt/khóa
+a (số lượng)    = số task đã duyệt / số task thuộc kỳ
+b (chất lượng)  = TB trên task đã duyệt của max(0, 100 − 25 × số task_submissions REWORK)
+c (tiến độ)     = TB trên task đã duyệt: completed_at ≤ due_at → 100; trễ → 75; trễ được chấp nhận → 100
+NV:      task_score = (a + b + c) / 3 × 70
+TP, PP:  task_score = (a + b + c + d + đ + e) / 6 × 70
+total_score = task_score + general_score (0–30)  →  grade</div>
+  </section>
+
+  <div id="features" style="display:grid;gap:44px"></div>
+
+  <section>
+    <div class="section-head">
+      <h2>Ràng buộc nghiệp vụ trong CSDL</h2>
+    </div>
+    <ul class="rules">
+      <li><strong>Mỗi phòng chỉ một ủy quyền hiệu lực (BR-04)</strong><code>EXCLUDE USING gist (department_id WITH =, tstzrange(starts_at, effective_ends_at) WITH &amp;&amp;)</code></li>
+      <li><strong>Reviewer ≠ người thực hiện (BR-07)</strong><code>CHECK (reviewer_id IS NULL OR reviewer_id &lt;&gt; assignee_id)</code></li>
+      <li><strong>Task tự giao</strong><code>CHECK (type &lt;&gt; 'SELF' OR assigner_id = assignee_id)</code></li>
+      <li><strong>Trình TP bắt buộc loại việc và nội dung (BR-02)</strong><code>(type = 'HEAD_REQUEST') = (head_request_kind IS NOT NULL) AND description IS NOT NULL</code></li>
+      <li><strong>Yêu cầu làm lại, từ chối gia hạn bắt buộc lý do (BR-06)</strong><code>CHECK (result &lt;&gt; 'REWORK' OR review_comment IS NOT NULL)</code></li>
+      <li><strong>Mỗi task một phiên bản đang chờ review, một yêu cầu gia hạn đang chờ</strong><code>UNIQUE (task_id) WHERE result = 'PENDING'</code></li>
+      <li><strong>Một kỳ KPI cho mỗi phòng mỗi tháng</strong><code>UNIQUE (department_id, year, month)</code></li>
+      <li><strong>Một task chỉ tính vào một kỳ</strong><code>kpi_task_items: UNIQUE (task_id)</code></li>
+      <li><strong>Chỉ số d, đ, e chỉ cho lãnh đạo</strong><code>CHECK (position &lt;&gt; 'STAFF' OR (dept_result_pct, organization_pct, solidarity_pct đều NULL))</code></li>
+      <li><strong>Lịch sử chỉ thêm</strong><span><code>task_histories</code> không có API sửa hoặc xóa. Thao tác trong lúc ủy quyền ghi <code>delegation_id</code> để hiển thị "PP A thay mặt TP B (ủy quyền số …)".</span></li>
+      <li><strong>Kiểm tra ở domain, không ở DB</strong><span>Ma trận giao việc, chuyển trạng thái, không ủy quyền lại, PP không tự duyệt việc của mình, không sửa khi Chờ review (BR-09), không chấm KPI của chính mình (KR-07).</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Cần chốt khi review</h2>
+    </div>
+    <ul class="open">
+      <li><strong>PP quản lý trực tiếp của NV chưa có trong CSDL</strong><p>Task tự giao của NV do "PP quản lý trực tiếp" review, nhưng <code>department_members</code> chưa có cột nào nối NV với PP. Đề xuất thêm <code>department_members.supervisor_id</code> (FK → <code>users</code>, chỉ cho NV).</p></li>
+      <li><strong>Hai bản thiết kế phân quyền chưa khớp</strong><p><code>database.md</code> dùng bảng <code>roles</code> + mảng <code>permissions</code>; <code>erd-rbac.html</code> dùng <code>users.type</code> + bảng <code>permissions</code>. Các bảng mới chỉ tham chiếu <code>users.id</code> nên không bị ảnh hưởng, nhưng cần chốt một bản trước khi viết migration V1.</p></li>
+      <li><strong>Trạng thái <code>CANCELLED</code></strong><p>Tài liệu nghiệp vụ có 7 trạng thái; thêm <code>CANCELLED</code> để lưu task bị hủy (BR-10) thay vì xóa.</p></li>
+      <li><strong>Kỳ của task theo tháng của hạn</strong><p>Theo mục 10.5 bản này. Nếu đổi sang tháng hoàn thành thì phải đổi cách chọn task, không đổi bảng.</p></li>
+      <li><strong>Bảng thông báo chưa thiết kế</strong><p>Module 5 bổ sung sau: <code>notifications</code> (người nhận, loại, task/ủy quyền liên quan, đã đọc) và cột ghi lần nhắc 48h/72h.</p></li>
+    </ul>
+  </section>
+</div>
+
+<script>
+const features = [
+  { cls: "f-account", title: "task", desc: "Giao việc, thực hiện & review (module 3–4)", tables: [
+    { name: "tasks", desc: "Một công việc. Task con trỏ về task cha qua parent_id.", cols: [
+      ["id", "BIGINT", ["PK"], ""],
+      ["department_id", "BIGINT", ["FK"], "→ departments"],
+      ["parent_id", "BIGINT", ["FK", "CK"], "→ tasks, ≠ id"],
+      ["type", "VARCHAR(20)", ["CK"], "ASSIGNED · SELF · HEAD_REQUEST (Trình TP)"],
+      ["head_request_kind", "VARCHAR(30)", ["CK"], "SIGN_DOCUMENT · DECISION · MEETING · BEYOND_DELEGATION"],
+      ["title", "VARCHAR(255)", [], ""],
+      ["description", "TEXT", [], "bắt buộc với Trình TP"],
+      ["expected_output", "VARCHAR(500)", [], "sản phẩm đầu ra"],
+      ["priority", "VARCHAR(10)", ["CK"], "LOW · NORMAL · HIGH · URGENT"],
+      ["status", "VARCHAR(25)", ["CK"], "7 trạng thái + CANCELLED"],
+      ["progress", "SMALLINT", ["CK"], "0–100"],
+      ["assigner_id", "BIGINT", ["FK"], "→ users, người giao"],
+      ["assignee_id", "BIGINT", ["FK"], "→ users, người thực hiện"],
+      ["reviewer_id", "BIGINT", ["FK", "CK"], "→ users, ≠ assignee; null = không review"],
+      ["delegation_id", "BIGINT", ["FK"], "→ delegations, giao thay mặt TP"],
+      ["due_at", "TIMESTAMPTZ", [], "hạn hiện hành, null = không có hạn"],
+      ["original_due_at", "TIMESTAMPTZ", [], "hạn lúc giao"],
+      ["overdue", "BOOLEAN", [], "cờ Trễ hạn (BR-12)"],
+      ["started_at, submitted_at", "TIMESTAMPTZ", [], ""],
+      ["completed_at", "TIMESTAMPTZ", [], "= ngày nộp phiên bản được duyệt"],
+      ["cancelled_at, cancelled_by, cancel_reason", "", ["CK"], "có ⇔ status = CANCELLED"],
+      ["created_*, updated_*", "", ["FK"], "audit"]
+    ]},
+    { name: "task_submissions", desc: "Mỗi lần nộp là một phiên bản (lần 1, 2…) kèm kết quả review.", cols: [
+      ["id", "BIGINT", ["PK"], ""],
+      ["task_id, version", "BIGINT · SMALLINT", ["FK", "UK"], "duy nhất theo cặp"],
+      ["content", "TEXT", [], "mô tả kết quả, bắt buộc"],
+      ["link_url", "VARCHAR(1000)", [], "tùy chọn"],
+      ["submitted_by, submitted_at", "", ["FK"], ""],
+      ["result", "VARCHAR(10)", ["CK"], "PENDING · APPROVED · REWORK; một PENDING / task"],
+      ["review_comment", "TEXT", ["CK"], "bắt buộc khi REWORK"],
+      ["reviewed_by, reviewed_at", "", ["FK"], ""],
+      ["review_delegation_id", "BIGINT", ["FK"], "→ delegations, PP duyệt thay TP"]
+    ]},
+    { name: "task_attachments", desc: "File của task hoặc của một phiên bản kết quả. File lưu ngoài DB.", cols: [
+      ["id", "BIGINT", ["PK"], ""],
+      ["task_id", "BIGINT", ["FK"], "→ tasks"],
+      ["submission_id", "BIGINT", ["FK"], "→ task_submissions, null = file của task"],
+      ["file_name, content_type, size_bytes", "", [], ""],
+      ["storage_key", "VARCHAR(500)", [], "đường dẫn trong kho file"],
+      ["uploaded_by, uploaded_at", "", ["FK"], ""]
+    ]},
+    { name: "task_comments", desc: "Bình luận trên task. Chỉ thêm.", cols: [
+      ["id", "BIGINT", ["PK"], ""],
+      ["task_id", "BIGINT", ["FK"], "→ tasks"],
+      ["author_id", "BIGINT", ["FK"], "→ users"],
+      ["content", "TEXT", [], ""],
+      ["created_at", "TIMESTAMPTZ", [], ""]
+    ]},
+    { name: "task_extension_requests", desc: "Xin gia hạn. Duyệt thì cập nhật tasks.due_at và ghi lịch sử.", cols: [
+      ["id", "BIGINT", ["PK"], ""],
+      ["task_id", "BIGINT", ["FK"], "→ tasks; một PENDING / task"],
+      ["requested_by", "BIGINT", ["FK"], "→ users"],
+      ["old_due_at, requested_due_at", "TIMESTAMPTZ", ["CK"], "hạn mới > hạn cũ"],
+      ["reason", "VARCHAR(500)", [], "bắt buộc"],
+      ["status", "VARCHAR(10)", ["CK"], "PENDING · APPROVED · REJECTED · CANCELLED"],
+      ["decided_by, decided_at", "", ["FK"], ""],
+      ["decision_note", "VARCHAR(500)", ["CK"], "bắt buộc khi REJECTED"],
+      ["delegation_id", "BIGINT", ["FK"], "PP quyết định thay TP"]
+    ]},
+    { name: "task_histories", desc: "Mọi thay đổi trạng thái, người thực hiện, reviewer, hạn, tiến độ. Chỉ thêm, không sửa, không xóa.", cols: [
+      ["id", "BIGINT", ["PK"], ""],
+      ["task_id", "BIGINT", ["FK"], "→ tasks"],
+      ["actor_id", "BIGINT", ["FK"], "→ users, null = hệ thống"],
+      ["delegation_id", "BIGINT", ["FK"], "thao tác thay mặt TP"],
+      ["action", "VARCHAR(40)", [], "CREATED, ACCEPTED, SUBMITTED, APPROVED…"],
+      ["field_name, old_value, new_value", "", [], "cũ → mới"],
+      ["reason", "VARCHAR(1000)", [], ""],
+      ["created_at", "TIMESTAMPTZ", [], ""]
+    ]}
+  ]},
+  { cls: "f-org", title: "delegation", desc: "Ủy quyền khi TP vắng (module 3)", tables: [
+    { name: "delegations", desc: "Phiếu ủy quyền. Trạng thái tính từ thời gian và revoked_at, không lưu.", cols: [
+      ["id", "BIGINT", ["PK"], ""],
+      ["code", "VARCHAR(30)", ["UK"], "số ủy quyền, ví dụ UQ-2026-0001"],
+      ["department_id", "BIGINT", ["FK"], "→ departments"],
+      ["delegator_id", "BIGINT", ["FK", "CK"], "→ users (TP), ≠ delegate_id"],
+      ["delegate_id", "BIGINT", ["FK"], "→ users (PP)"],
+      ["starts_at, ends_at", "TIMESTAMPTZ", ["CK"], "ends_at > starts_at, có thể theo giờ"],
+      ["reason", "VARCHAR(500)", [], "bắt buộc"],
+      ["can_assign_all", "BOOLEAN", ["CK"], "giao việc cho cả phòng"],
+      ["can_review", "BOOLEAN", ["CK"], "review thay TP"],
+      ["can_decide_extension", "BOOLEAN", ["CK"], "chấp nhận / từ chối gia hạn; ít nhất một quyền"],
+      ["revoked_at, revoked_by, revoke_reason", "", ["FK"], "TP thu hồi sớm"],
+      ["effective_ends_at", "TIMESTAMPTZ", [], "cột sinh, dùng cho exclusion constraint"],
+      ["handover_viewed_at", "TIMESTAMPTZ", [], "TP đã xem báo cáo bàn giao"],
+      ["created_by, created_at", "", ["FK"], "TP, hoặc HR/Admin tạo thay"]
+    ]}
+  ]},
+  { cls: "f-shared", title: "kpi", desc: "KPI & xếp loại (module 6)", tables: [
+    { name: "kpi_periods", desc: "Kỳ đánh giá của một phòng trong một tháng. Tạo tự động ngày 1 tháng sau.", cols: [
+      ["id", "BIGINT", ["PK"], ""],
+      ["department_id, year, month", "", ["FK", "UK"], "một kỳ / phòng / tháng"],
+      ["status", "VARCHAR(15)", ["CK"], "OPEN · FINALIZED · LOCKED"],
+      ["self_assessment_due_on", "DATE", [], "hạn tự đánh giá, mặc định ngày 5"],
+      ["department_grade, department_grade_by", "", ["CK", "FK"], "xếp loại phòng, HR nhập"],
+      ["last_calculated_at", "TIMESTAMPTZ", [], ""],
+      ["finalized_at, finalized_by", "", ["FK"], "TP chốt"],
+      ["returned_reason", "VARCHAR(500)", [], "HR trả lại TP"],
+      ["locked_at, locked_by", "", ["FK", "CK"], "HR khóa"]
+    ]},
+    { name: "kpi_evaluations", desc: "Phiếu đánh giá của một người trong kỳ.", cols: [
+      ["id", "BIGINT", ["PK"], ""],
+      ["period_id, user_id", "BIGINT", ["FK", "UK"], "một phiếu / người / kỳ"],
+      ["position", "VARCHAR(20)", ["CK"], "chức vụ ngày cuối kỳ"],
+      ["task_count, approved_count", "INT", [], ""],
+      ["quantity_pct, quality_pct, progress_pct", "NUMERIC(5,2)", ["CK"], "a, b, c — hệ thống tính"],
+      ["dept_result_pct", "NUMERIC(5,2)", ["CK"], "d — chỉ lãnh đạo, hệ thống tính"],
+      ["organization_pct, solidarity_pct", "NUMERIC(5,2)", ["CK"], "đ, e — chỉ lãnh đạo, chấm tay"],
+      ["task_score", "NUMERIC(4,1)", ["CK"], "0–70"],
+      ["task_score_manual, task_score_note", "", ["CK"], "TP nhập tay khi không có task"],
+      ["general_score, general_comment", "", ["CK"], "0–30, chấm tay"],
+      ["scored_by, scored_at", "", ["FK"], "TP, hoặc HR với phiếu của TP"],
+      ["total_score", "NUMERIC(4,1)", [], ""],
+      ["grade, grade_note", "", ["CK"], "EXCELLENT · GOOD · COMPLETED · NOT_COMPLETED"],
+      ["disciplined, discipline_note", "", [], "HR đánh dấu"],
+      ["self_grade, self_comment, self_assessed_at", "", ["CK"], "tự đánh giá"]
+    ]},
+    { name: "kpi_task_items", desc: "Ảnh chụp từng task đã tính, để giải thích điểm và giữ nguyên khi kỳ đã khóa.", cols: [
+      ["id", "BIGINT", ["PK"], ""],
+      ["evaluation_id", "BIGINT", ["FK"], "→ kpi_evaluations"],
+      ["task_id", "BIGINT", ["FK", "UK"], "→ tasks, một task chỉ một kỳ"],
+      ["due_at, completed_at", "TIMESTAMPTZ", ["CK"], "approved ⇔ có completed_at"],
+      ["approved", "BOOLEAN", [], ""],
+      ["rework_count", "SMALLINT", [], "số lần làm lại"],
+      ["late, late_excused", "BOOLEAN", [], "trễ, trễ được chấp nhận"],
+      ["quality_pct, progress_pct", "NUMERIC(5,2)", [], "điểm b, c của task"]
+    ]},
+    { name: "kpi_feedbacks", desc: "Ý kiến khi tự đánh giá: xin xác nhận trễ, khiếu nại số liệu, ý kiến chung.", cols: [
+      ["id", "BIGINT", ["PK"], ""],
+      ["evaluation_id", "BIGINT", ["FK"], "→ kpi_evaluations"],
+      ["task_item_id", "BIGINT", ["FK"], "→ kpi_task_items, set null khi task rời kỳ"],
+      ["type", "VARCHAR(15)", ["CK"], "LATE_EXCUSE · DATA_ISSUE · GENERAL"],
+      ["content", "TEXT", [], ""],
+      ["attachment_name, attachment_key", "", [], "file tùy chọn"],
+      ["status", "VARCHAR(10)", ["CK"], "PENDING · ACCEPTED · REJECTED"],
+      ["response", "VARCHAR(1000)", ["CK"], "bắt buộc khi REJECTED"],
+      ["resolved_by, resolved_at", "", ["FK"], "TP, hoặc HR với ý kiến của TP"],
+      ["created_by, created_at", "", ["FK"], ""]
+    ]}
+  ]}
+];
+
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+document.getElementById("features").innerHTML = features.map(f => `
+  <section class="feature ${f.cls}">
+    <div class="feature-title"><h2>${f.title}</h2><span class="lede">${esc(f.desc)}</span></div>
+    <div class="tables">
+      ${f.tables.map(t => `
+        <article class="card">
+          <div class="card-head">
+            <div class="name"><h3>${t.name}</h3></div>
+            <p>${esc(t.desc)}</p>
+          </div>
+          <table class="cols"><tbody>
+            ${t.cols.map(([n, ty, keys, note]) => `
+              <tr>
+                <td class="c-name">${esc(n)}${keys.length ? `<span class="badges">${keys.map(k => `<span class="b b-${k}">${k}</span>`).join("")}</span>` : ""}</td>
+                <td class="c-type">${esc(ty)}</td>
+                <td class="c-note">${esc(note)}</td>
+              </tr>`).join("")}
+          </tbody></table>
+        </article>`).join("")}
+    </div>
+  </section>`).join("");
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true });</script>
+</body>
+</html>
