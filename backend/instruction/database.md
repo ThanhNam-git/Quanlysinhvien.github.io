@@ -762,7 +762,7 @@ Giá trị `task_histories.action` (enum Java): `CREATED`, `ACCEPTED`, `REJECTED
 
 ## 9. KPI (module 6)
 
-Nghiệp vụ chi tiết: mục 10.5–10.10 của tài liệu nghiệp vụ (`Tai_lieu_nghiep_vu_He_thong_quan_ly_cong_viec.docx`), quy tắc KR-01…KR-11.
+Nghiệp vụ chi tiết: mục 10.5–10.10 của tài liệu nghiệp vụ (`docs/tai-lieu-nghiep-vu.md`), quy tắc KR-01…KR-11.
 
 ### 9.1. Sơ đồ quan hệ
 

@@ -6,7 +6,7 @@ Hướng dẫn cho Claude Code khi làm việc trong repo này.
 
 **Hệ thống quản lý công việc trong cơ quan nhà nước** (đồ án chuyên ngành). Quản lý giao việc, thực hiện, review kết quả và tự động tính KPI cho công chức trong phạm vi **một phòng ban**, mô phỏng theo Nghị định 335/2025/NĐ-CP (thang 100 điểm).
 
-Tài liệu nghiệp vụ gốc: `Tai_lieu_nghiep_vu_He_thong_quan_ly_cong_viec.docx` — là nguồn sự thật; khi có mâu thuẫn, đối chiếu lại file này.
+Tài liệu nghiệp vụ gốc: [`docs/tai-lieu-nghiep-vu.md`](docs/tai-lieu-nghiep-vu.md) — là nguồn sự thật; khi có mâu thuẫn, đối chiếu lại file này.
 
 - **Trong phạm vi:** giao việc, nhận việc, cập nhật tiến độ, nộp kết quả, review, đóng việc, ủy quyền, thông báo, KPI.
 - **Ngoài phạm vi:** chấm công, lương, KPI tổng hợp của module nhân sự, giao việc liên phòng (bản đầu).
