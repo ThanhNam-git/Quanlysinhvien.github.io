@@ -46,7 +46,7 @@ vn.qlcv/
 
 | Package | Module |
 |---|---|
-| `account` | 1 – Tài khoản & phân quyền (đăng nhập, đổi mật khẩu, role Admin/HR/Member) |
+| `account` | 1 – Tài khoản & phân quyền (đăng nhập, đổi mật khẩu, role ADMIN / MEMBER) |
 | `organization` | 2 – Phòng ban, chức vụ TP/PP/NV, vị trí việc làm |
 | `task` | 3 + 4 – Giao việc, task cha–con, Trình TP, gia hạn, tiến độ, nộp kết quả, review, lịch sử |
 | `delegation` | 3 – Ủy quyền + báo cáo bàn giao |

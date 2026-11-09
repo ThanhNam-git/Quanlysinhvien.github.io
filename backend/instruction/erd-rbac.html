@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: tài liệu review một cột — sơ đồ tổng thể, cách tính quyền, thẻ bảng theo feature, ràng buộc, ma trận vị trí – permission, điểm cần chốt */
+html { color-scheme: light; }
 :root {
   --bg: #f6f7f9;
   --surface: #ffffff;
@@ -27,22 +28,6 @@
   --paper: #ffffff;
   --font-body: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #12161d; --surface: #1a2029; --fg: #e4e8ef; --muted: #9aa4b5; --line: #2c3442;
-    --accent: #7fb0ec; --account: #7fb0ec; --account-soft: #1c2b40;
-    --org: #6fd0b4; --org-soft: #16302a; --shared: #e3b46a; --shared-soft: #33291a;
-    --warn: #f0a46c; --warn-soft: #3a2518; --paper: #f3f5f8;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #12161d; --surface: #1a2029; --fg: #e4e8ef; --muted: #9aa4b5; --line: #2c3442;
-  --accent: #7fb0ec; --account: #7fb0ec; --account-soft: #1c2b40;
-  --org: #6fd0b4; --org-soft: #16302a; --shared: #e3b46a; --shared-soft: #33291a;
-  --warn: #f0a46c; --warn-soft: #3a2518; --paper: #f3f5f8;
-  color-scheme: dark;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.55; }
@@ -124,7 +109,7 @@ section { display: grid; gap: 16px; }
   <header>
     <div class="eyebrow">Đồ án · Hệ thống quản lý công việc · Module 1 & 2</div>
     <h1>ERD Tài khoản, phân quyền và Tổ chức</h1>
-    <p class="lede">Thiết kế CSDL PostgreSQL. Permission được cấu hình cho từng vị trí việc làm; <code>users.type</code> chỉ phân biệt Admin hệ thống với người dùng thường. Nguồn: <code>backend/instruction/database.md</code>. Bản để review, chưa tạo migration.</p>
+    <p class="lede">Thiết kế CSDL PostgreSQL. Permission được cấu hình cho từng vị trí việc làm; <code>users.role</code> là role: <code>ADMIN</code> hoặc <code>MEMBER</code>; TP, PP, NV đều là MEMBER được gán chức vụ. Nguồn: <code>backend/instruction/database.md</code>. Đã có migration <code>V1__account_and_organization.sql</code>, <code>V2__seed_permissions_and_job_positions.sql</code>.</p>
     <div class="legend">
       <span><i class="dot" style="background:var(--account)"></i>account</span>
       <span><i class="dot" style="background:var(--org)"></i>organization</span>
@@ -159,7 +144,7 @@ erDiagram
         varchar password_hash
         varchar full_name
         varchar phone
-        varchar type "ADMIN MEMBER"
+        varchar role "ADMIN MEMBER"
         varchar status "ACTIVE LOCKED DISABLED"
         int failed_login_attempts
         timestamptz locked_until
@@ -222,8 +207,8 @@ erDiagram
       <h2>Một người được quyền gì</h2>
       <p class="lede">Tính một lần lúc đăng nhập (session của Spring Security).</p>
     </div>
-<div class="formula">users.type = ADMIN   →  mọi permission trong bảng permissions + ROLE_ADMIN
-users.type = MEMBER  →  permission của job_position thuộc chức vụ đang hiệu lực
+<div class="formula">users.role = ADMIN   →  mọi permission trong bảng permissions + ROLE_ADMIN
+users.role = MEMBER  →  permission của job_position thuộc chức vụ đang hiệu lực
                         (department_members.ended_at IS NULL)
                         không có chức vụ hoặc vị trí → không có permission quản trị</div>
     <div class="layers">
@@ -242,7 +227,7 @@ users.type = MEMBER  →  permission của job_position thuộc chức vụ đan
       <div class="layer">
         <div class="eyebrow">Chỉ ADMIN</div>
         <h3>Cấu hình phân quyền</h3>
-        <p>Cấp, thu hồi permission cho vị trí việc làm và đổi <code>users.type</code>. Kiểm tra bằng <code>hasRole('ADMIN')</code>, không phải permission, để không ai tự cấp thêm quyền cho mình.</p>
+        <p>Cấp, thu hồi permission cho vị trí việc làm và đổi <code>users.role</code>. Kiểm tra bằng <code>hasRole('ADMIN')</code>, không phải permission, để không ai tự cấp thêm quyền cho mình.</p>
       </div>
     </div>
   </section>
@@ -275,7 +260,7 @@ users.type = MEMBER  →  permission của job_position thuộc chức vụ đan
       <table class="matrix" id="matrix">
         <thead><tr>
           <th>Permission</th><th>Ý nghĩa</th>
-          <th class="chk">ADMIN<small>users.type</small></th>
+          <th class="chk">ADMIN<small>users.role</small></th>
           <th class="chk">Chuyên viên tổ chức – nhân sự<small>HR_OFFICER</small></th>
           <th class="chk">Chuyên viên<small>SPECIALIST</small></th>
         </tr></thead>
@@ -289,8 +274,7 @@ users.type = MEMBER  →  permission của job_position thuộc chức vụ đan
       <h2>Cần chốt khi review</h2>
     </div>
     <ul class="open">
-      <li><strong>Role HR trở thành vị trí việc làm</strong><p>Không còn role HR. Người làm nhân sự cần có chức vụ trong một phòng (ví dụ Phòng Tổ chức) với vị trí <code>HR_OFFICER</code>. CLAUDE.md gốc đang ghi "role Admin/HR/Member" nên cần sửa theo.</p></li>
-      <li><strong>ADMIN có mọi permission, kể cả khóa kỳ KPI</strong><p>Trước đây chỉ HR khóa kỳ. Nếu muốn giữ, cần loại <code>kpi:lock-period</code> khỏi quyền của ADMIN.</p></li>
+      <li><strong>ADMIN có mọi permission, kể cả khóa kỳ KPI</strong><p>Cả ADMIN và vị trí <code>HR_OFFICER</code> đều khóa được kỳ. Nếu chỉ muốn một bên, bỏ <code>kpi:lock-period</code> khỏi bên kia.</p></li>
       <li><strong>Ngưỡng khóa đăng nhập</strong><p>Đang đặt sai mật khẩu 5 lần thì khóa tạm 15 phút.</p></li>
       <li><strong>Không có optimistic lock</strong><p>Đã bỏ cột <code>version</code>: hai người sửa cùng một bản ghi cùng lúc thì người lưu sau ghi đè người trước.</p></li>
     </ul>
@@ -307,7 +291,7 @@ const features = [
       ["password_hash", "VARCHAR(100)", [], "BCrypt, tiền tố {bcrypt}"],
       ["full_name", "VARCHAR(150)", [], ""],
       ["phone", "VARCHAR(20)", [], "tùy chọn"],
-      ["type", "VARCHAR(20)", ["CK"], "ADMIN · MEMBER, mặc định MEMBER"],
+      ["role", "VARCHAR(20)", ["CK"], "ADMIN · MEMBER, mặc định MEMBER"],
       ["status", "VARCHAR(20)", ["CK"], "ACTIVE · LOCKED · DISABLED"],
       ["failed_login_attempts", "INT", [], "sai 5 lần → khóa tạm"],
       ["locked_until", "TIMESTAMPTZ", [], "khóa tạm 15 phút"],

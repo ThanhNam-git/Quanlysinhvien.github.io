@@ -43,7 +43,7 @@ Khi thêm/đổi endpoint: sửa backend trước, rồi cập nhật `types.ts`
 | Reviewer | Người duyệt kết quả |
 | Trình TP | Loại task PP giao ngược lên TP (việc cần thẩm quyền TP) |
 
-**Quan trọng:** quyền giao việc dựa trên **chức vụ trong phòng ban** (TP/PP/NV), không dựa trên role hệ thống. Role hệ thống (Admin, HR, Member) chỉ quyết định quyền quản trị. Mỗi người chỉ có một chức vụ trong một phòng tại một thời điểm. Admin/HR gán chức vụ, tạo ủy quyền thay khi TP vắng đột xuất, xem toàn bộ, nhưng **không tham gia luồng duyệt**.
+**Quan trọng:** quyền giao việc dựa trên **chức vụ trong phòng ban** (TP/PP/NV), không dựa trên role hệ thống. Role hệ thống chỉ có `ADMIN` và `MEMBER`, quyết định quyền quản trị; TP, PP, NV đều là `MEMBER` được gán chức vụ (quyền quản trị thêm, nếu có, đến từ permission của vị trí việc làm, ví dụ `HR_OFFICER`). Mỗi người chỉ có một chức vụ trong một phòng tại một thời điểm. Admin (hoặc người có permission tương ứng) gán chức vụ, tạo ủy quyền thay khi TP vắng đột xuất, xem toàn bộ, nhưng **không tham gia luồng duyệt**.
 
 ## Quy tắc giao việc
 
@@ -65,7 +65,7 @@ Ma trận giao việc (cùng phòng):
 - Mọi thao tác ghi "PP A thay mặt TP B (ủy quyền số …)". Thông báo gửi TP cũng gửi PP được ủy quyền.
 - Hết hạn tự thu hồi; TP có thể thu hồi sớm. Việc đã làm trong lúc ủy quyền giữ nguyên.
 - TP quay lại → báo cáo bàn giao (việc PP đã giao, đã duyệt, việc Trình TP đang chờ).
-- Ràng buộc: mỗi lúc chỉ **một** ủy quyền hiệu lực; không ủy quyền lại; PP không tự duyệt việc của chính mình. TP vắng đột xuất → HR/Admin tạo phiếu thay.
+- Ràng buộc: mỗi lúc chỉ **một** ủy quyền hiệu lực; không ủy quyền lại; PP không tự duyệt việc của chính mình. TP vắng đột xuất → Admin (hoặc người có permission `delegation:create-on-behalf`) tạo phiếu thay.
 
 ### Task Trình TP (PP → TP)
 - Chỉ cho: ký duyệt văn bản/tờ trình, quyết định phương án/ý kiến chỉ đạo, chủ trì/dự họp với cấp trên–đơn vị khác, việc phát sinh vượt phạm vi ủy quyền.
@@ -149,7 +149,7 @@ Ví dụ: 10 task, 9 duyệt, 1 task làm lại 1 lần, 2 task trễ → a = 90
 
 Xếp loại: ≥ 90 Hoàn thành xuất sắc; 70–<90 Hoàn thành tốt; 50–<70 Hoàn thành; < 50 hoặc bị kỷ luật → Không hoàn thành. Số Xuất sắc ≤ 20% số Tốt trong phòng (cảnh báo khi vượt). Xếp loại TP không cao hơn xếp loại phòng.
 
-Chốt điểm hằng tháng: ngày 1 tháng sau hệ thống tính điểm nháp → NV xem, tự đánh giá, ghi ý kiến → TP xử lý ý kiến, chấm 30 điểm, chốt phòng → HR khóa kỳ (sau khóa không đổi điểm). Điểm năm = trung bình 12 tháng.
+Chốt điểm hằng tháng: ngày 1 tháng sau hệ thống tính điểm nháp → NV xem, tự đánh giá, ghi ý kiến → TP xử lý ý kiến, chấm 30 điểm, chốt phòng → Admin (hoặc người có permission `kpi:lock-period`) khóa kỳ (sau khóa không đổi điểm). Điểm năm = trung bình 12 tháng.
 
 > Công thức lấy từ bài phân tích báo chí, chưa đối chiếu văn bản gốc NĐ 335/2025.
 
@@ -159,7 +159,7 @@ Thứ tự làm: 1 → 2 → 3 → 4 → 5 → 6 → 7 (KPI cần dữ liệu gi
 
 | # | Module | Chức năng chính | Ưu tiên |
 |---|---|---|---|
-| 1 | Tài khoản & phân quyền | Đăng nhập, đổi mật khẩu, role Admin/HR/Member | Phải có |
+| 1 | Tài khoản & phân quyền | Đăng nhập, đổi mật khẩu, role ADMIN / MEMBER | Phải có |
 | 2 | Tổ chức | CRUD phòng ban, gán chức vụ TP/PP/NV, danh mục vị trí việc làm | Phải có |
 | 3 | Giao việc | Tạo task (tiêu đề, mô tả, hạn, ưu tiên, sản phẩm đầu ra, file); ma trận giao việc; task cha–con; Trình TP; ủy quyền + báo cáo bàn giao; xin gia hạn | Phải có |
 | 4 | Thực hiện & review | Cập nhật tiến độ (%), bình luận, nộp nhiều phiên bản, duyệt/làm lại, lịch sử | Phải có |
@@ -170,8 +170,8 @@ Thứ tự làm: 1 → 2 → 3 → 4 → 5 → 6 → 7 (KPI cần dữ liệu gi
 
 ## Câu hỏi mở (chưa chốt)
 
-- Danh sách loại việc Trình TP đã đủ chưa, hay cho HR cấu hình?
+- Danh sách loại việc Trình TP đã đủ chưa, hay cho Admin cấu hình?
 - TP có được ủy quyền cho nhiều PP cùng lúc không? (Hiện tại: chỉ một.)
 - PP được ủy quyền có chấm KPI thay TP không? (Hiện tại: không.)
-- Thời gian nhắc 48h/72h có cho HR cấu hình không?
+- Thời gian nhắc 48h/72h có cho Admin cấu hình không?
 - Có giao việc liên phòng trong bản đầu không?

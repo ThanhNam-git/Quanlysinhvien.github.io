@@ -27,7 +27,7 @@ src/
 │       │   └── [id]/page.tsx
 │       ├── delegations/
 │       ├── kpi/
-│       └── admin/                    # quản trị phòng ban, chức vụ (Admin/HR)
+│       └── admin/                    # quản trị phòng ban, chức vụ (Admin, người có permission quản trị)
 ├── features/
 │   ├── task/
 │   │   ├── api.ts                    # hàm gọi REST API của feature
